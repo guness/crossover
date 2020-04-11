@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:xo/login.dart';
+import 'package:crossover/login.dart';
 
 void main() => runApp(MyApp());
 
@@ -58,8 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     Navigator.push(
       context,
-      MaterialPageRoute(
-          builder: (context) => LoginPage(), fullscreenDialog: true),
+      MaterialPageRoute(builder: (context) => LoginPage(), fullscreenDialog: true),
     );
   }
 
