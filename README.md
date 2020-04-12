@@ -4,6 +4,9 @@ Created with Flutter.
 
 ## Getting Started
 
+## How to build
+Generate files by `flutter packages pub run build_runner build`
+
 ## Screens
 ![Login Screen](/art/login.png)
 
