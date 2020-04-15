@@ -1,9 +1,22 @@
+import 'dart:ffi';
+
+import 'package:crossover/data/network/Webservice.dart';
 import 'package:flutter/material.dart';
+import 'package:email_validator/email_validator.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-class LoginPage extends StatelessWidget {
-  LoginPage({Key key, this.title}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
 
-  final String title;
+class _LoginPageState extends State<LoginPage> {
+  String _email, _password = "";
+  final _formKey = GlobalKey<FormState>();
+  bool _autoValidate = false;
+
+  FocusNode _emailFocusNode = FocusNode();
+  FocusNode _passwordFocusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
@@ -12,71 +25,60 @@ class LoginPage extends StatelessWidget {
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FractionallySizedBox(
-              widthFactor: 0.6,
-              child: Image(
-                image: AssetImage('assets/images/xo_logo.png'),
-              ),
-            ),
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 2.0,
-                    horizontal: 32.0,
+        child: Container(
+          padding: EdgeInsets.all(32),
+          child: Form(
+            key: _formKey,
+            autovalidate: _autoValidate,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FractionallySizedBox(
+                    widthFactor: 0.6,
+                    child: Image(
+                      image: AssetImage('assets/images/xo_logo.png'),
+                    ),
                   ),
-                  child: Text('Login', style: Theme.of(context).textTheme.subhead),
-                )
-              ],
+                  SizedBox(height: 16),
+                  TextFormField(
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: (email) => EmailValidator.validate(email) ? null : 'Invalid email address',
+                    onSaved: (email) => _email = email,
+                    decoration: InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email)),
+                    onFieldSubmitted: (_) => fieldFocusChange(context, _emailFocusNode, _passwordFocusNode),
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    keyboardType: TextInputType.text,
+                    focusNode: _passwordFocusNode,
+                    obscureText: true,
+                    textInputAction: TextInputAction.go,
+                    validator: (password) => password.isNotEmpty ? null : 'Password required',
+                    onSaved: (password) => _password = password,
+                    decoration: InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock)),
+                  ),
+                  SizedBox(height: 16),
+                  RaisedButton(
+                      onPressed: () {
+                        if (_formKey.currentState.validate()) {
+                          _formKey.currentState.save();
+                          login(_email, _password);
+                        } else {
+                          setState(() {
+                            _autoValidate = true;
+                          });
+                        }
+                      },
+                      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 48.0),
+                      textColor: Colors.white,
+                      color: Theme.of(context).accentColor,
+                      child: const Text('Login', style: TextStyle(fontSize: 20))),
+                ],
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 4.0,
-                horizontal: 32.0,
-              ),
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  icon: Icon(Icons.email),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 4.0,
-                horizontal: 32.0,
-              ),
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  icon: Icon(Icons.lock),
-                ),
-              ),
-            ),
-            RaisedButton(
-                onPressed: () {},
-                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 48.0),
-                textColor: Colors.white,
-                color: Theme.of(context).accentColor,
-                child: const Text('Login', style: TextStyle(fontSize: 20))),
-          ],
+          ),
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
       persistentFooterButtons: [
@@ -84,4 +86,25 @@ class LoginPage extends StatelessWidget {
       ],
     );
   }
+
+  login(String email, String password) async {
+    return WebService()
+        .authorize(email, password)
+        .catchError((error) => toastMessage("Invalid credentials!: $error"))
+        .then((success) => success != null ? toastMessage("Done!") : Void);
+  }
+}
+
+void toastMessage(String message) {
+  Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      fontSize: 16.0);
+}
+
+void fieldFocusChange(BuildContext context, FocusNode currentFocus, FocusNode nextFocus) {
+  currentFocus.unfocus();
+  FocusScope.of(context).requestFocus(nextFocus);
 }
